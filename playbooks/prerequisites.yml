@@ -1,0 +1,26 @@
+---
+- hosts: all
+  become: yes
+  vars_files:
+  - ./env_variables.yml
+  tasks:
+  - name: Remove swapfile from /etc/fstab
+    mount:
+        name: "{{ item }}"
+        fstype: swap
+        state: absent
+    with_items:
+        - swap
+        - none
+
+  - name: Disabling Swap on all nodes
+    shell: swapoff -a
+
+  - name: Add IPs to /etc/hosts on master and workers
+    lineinfile:
+      dest: /etc/hosts
+      regexp: '.*{{ item }}$'
+      line: "{{ hostvars[item].ansible_host }} {{item}}"
+      state: present
+    when: hostvars[item].ansible_host is defined
+    with_items: "{{ groups.all }}"
